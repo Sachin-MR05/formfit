@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "model_version": "squat-mlp-v1+873fab84",
+  "foot_offset": 0.14,
+  "depth_phi_ok": 5.0,
+  "torso_tol": 8.0,
+  "alpha_range": [
+    26.0,
+    46.0
+  ],
+  "alpha_max": 52.0,
+  "generic_knee_max": 90.0,
+  "rep_start_knee": 140.0,
+  "rep_end_knee": 160.0,
+  "min_rep_knee": 125.0,
+  "ema_alpha": 0.5,
+  "calib_seconds": 3,
+  "calib_max_frames": 30,
+  "calib_clip_max_s": 8.0,
+  "calib_max_px": 1280,
+  "score_good_min": 70,
+  "score_borderline_min": 50,
+  "generic_torso_max": 37.4,
+  "feature_names": {
+    "kinematic": [
+      "knee",
+      "hip",
+      "torso",
+      "shank",
+      "phi"
+    ],
+    "ratios": [
+      "femur_torso",
+      "shank_femur",
+      "leg_torso"
+    ]
+  }
+}

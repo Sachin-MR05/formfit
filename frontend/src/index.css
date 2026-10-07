@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   FormFit design tokens (GO GYM-inspired bento style).
+   Colour MEANING is fixed across the whole app:
+     good = lime   borderline = yellow   fix = coral
+     target = sky (your personal target)   body = lavender (your proportions)
+   Never rely on colour alone: always pair it with an icon and a word.
+   --------------------------------------------------------------------------- */
+@theme {
+  --font-display: 'Unbounded Variable', 'Arial Black', system-ui, sans-serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-canvas: #f1f4e2;
+  --color-surface: #ffffff;
+  --color-ink: #0b0b0b;
+  --color-ink-soft: #4a5246;
+
+  --color-good: #d4f28a;
+  --color-borderline: #ffe680;
+  --color-fix: #ff8f7e;
+  --color-target: #bfd9ea;
+  --color-body: #cdb4f0;
+  --color-sand: #ebcda8;
+
+  --radius-tile: 2rem;
+  --radius-pill: 9999px;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
