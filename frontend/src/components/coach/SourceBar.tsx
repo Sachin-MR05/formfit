@@ -13,9 +13,9 @@ export function SourceBar({ mode }: { mode: 'live' | 'review' }) {
   const loading = useCoach((s) => s.modelLoading);
 
   return (
-    <section aria-labelledby="step2" className="rounded-tile bg-white p-4">
-      <h2 id="step2" className="text-xs font-extrabold uppercase tracking-wide text-ink-soft">
-        Step 2 · {mode === 'live' ? 'Live camera' : 'Check a past video'}
+    <section aria-labelledby="source-heading" className="rounded-tile bg-white p-4">
+      <h2 id="source-heading" className="text-xs font-extrabold uppercase tracking-wide text-ink-soft">
+        {mode === 'live' ? 'Live camera' : 'Check a past video'}
       </h2>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {mode === 'live' ? (

@@ -10,6 +10,8 @@ export type RuntimeEvent =
   | { type: 'set_finished'; summary: SetSummary }
   /** `restored` = loaded from storage at start-up (should not be announced) */
   | { type: 'profile_ready'; kind: ProfileKind; restored: boolean }
-  | { type: 'source_started'; source: SourceKind };
+  | { type: 'source_started'; source: SourceKind }
+  /** something other than a new rep changed locally (e.g. a label): worth syncing */
+  | { type: 'data_changed' };
 
 export type RuntimeListener = (event: RuntimeEvent) => void;

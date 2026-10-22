@@ -59,7 +59,16 @@ export interface FrameResult {
 /** measured = from photos/clip/camera, manual = ratios typed in, average = generic build (not personalized) */
 export type ProfileKind = 'measured' | 'manual' | 'average';
 
-export interface StoredProfile {
+/** Sync bookkeeping shared by everything stored locally. A record is "pending" until `syncedVersion === updatedAt`. */
+export interface SyncStamp {
+  /** version = the time of the last local change (ms); every change moves it forward */
+  updatedAt: number;
+  /** the `updatedAt` the server last acknowledged, or null if it never has */
+  syncedVersion: number | null;
+}
+
+export interface StoredProfile extends SyncStamp {
+  id: string;
   /** older saved records have no kind and are treated as 'measured' */
   kind?: ProfileKind;
   profile: BodyProfile;
@@ -72,8 +81,10 @@ export interface StoredProfile {
   createdAt: number;
 }
 
-export interface StoredSession {
+export interface StoredSession extends SyncStamp {
   id: string;
+  /** a deleted session that the server has not yet been told about (hidden everywhere in the UI) */
+  deleted?: boolean;
   startedAt: number;
   endedAt: number | null;
   source: 'live' | 'upload';
@@ -85,7 +96,7 @@ export interface StoredSession {
 
 export type RepLabel = 'good' | 'faulty' | null;
 
-export interface StoredRep {
+export interface StoredRep extends SyncStamp {
   id: string;
   sessionId: string;
   index: number;

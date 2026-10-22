@@ -1,13 +1,11 @@
 /** Voice settings (persisted on the device) and what the UI shows about the coach's speech. */
 import { createStore } from 'zustand/vanilla';
+import type { KeyValueStorage } from '../../lib/storage.ts';
 import { DEFAULT_VOICE_SETTINGS, type UtteranceKind, type VoiceInfo, type VoiceSettings, type VoiceStyle } from './types.ts';
 
 export const VOICE_STORAGE_KEY = 'formfit.voice.v1';
 
-export interface KeyValueStorage {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}
+export type { KeyValueStorage } from '../../lib/storage.ts';
 
 const STYLES: readonly VoiceStyle[] = ['calm', 'motivating', 'count'];
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));

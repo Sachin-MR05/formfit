@@ -61,6 +61,7 @@ export class CoachRuntime {
   private fpsWindowStart = 0;
   private fpsFrames = 0;
 
+  private profileId: string | null = null;
   private lowFpsWindows = 0;
   private listeners = new Set<RuntimeListener>();
 
@@ -111,6 +112,28 @@ export class CoachRuntime {
     } catch (e) {
       this.setState({ saveError: `Could not read saved data: ${errMsg(e)}` });
     }
+  }
+
+  /** Local data was wiped (another account signed in on this device): forget everything shown on screen. */
+  handleDataReset(): void {
+    this.controller.clearProfile();
+    this.profileId = null;
+    this.repViews = [];
+    this.session = null;
+    this.setState({
+      profile: null,
+      reps: [],
+      lastRep: null,
+      lastSet: null,
+      calibration: { status: 'none', message: 'Not personalized yet. Upload a standing side-on photo to begin.', progress: null },
+    });
+  }
+
+  /** After a sync: adopt a newer body profile that came from another device. */
+  async reloadProfile(): Promise<void> {
+    const saved = await this.deps.repo.loadProfile();
+    if (!saved || saved.id === this.profileId) return;
+    this.installProfile(saved, `Using your saved profile (${saved.source}, ${new Date(saved.createdAt).toLocaleDateString()}).`, true);
   }
 
   // ----------------------------------------------------------------------------- store helpers
@@ -380,7 +403,11 @@ export class CoachRuntime {
         this.banner(msg, 'err');
         return;
       }
+      const now = this.deps.now();
       const stored: StoredProfile = {
+        id: newId(),
+        updatedAt: now,
+        syncedVersion: null,
         kind: 'measured',
         profile: cal.result.profile,
         side: cal.result.side,
@@ -388,7 +415,7 @@ export class CoachRuntime {
         thigh2d: cal.result.thigh2d,
         samples: cal.result.samples,
         source: `${files.length} file(s), ${frames.length} frame(s) analysed`,
-        createdAt: this.deps.now(),
+        createdAt: now,
       };
       this.installProfile(stored, `Personalized from ${stored.source} (${stored.samples} clean standing frame${stored.samples > 1 ? 's' : ''}). Now start the camera or upload a squat video.`);
       this.setState({ calibration: { ...this.store.getState().calibration, details } });
@@ -417,6 +444,9 @@ export class CoachRuntime {
    */
   useAverageBuild(): void {
     const stored: StoredProfile = {
+      id: newId(),
+      updatedAt: this.deps.now(),
+      syncedVersion: null,
       kind: 'average',
       profile: { femurTorso: 0.85, shankFemur: 1.0, legTorso: 1.7, upSign: -1 },
       side: 'left',
@@ -433,7 +463,11 @@ export class CoachRuntime {
   setManualProfile(femurTorso: number, shankFemur: number): string | null {
     if (!(femurTorso >= 0.5 && femurTorso <= 1.4)) return 'Femur / torso should be between 0.5 and 1.4 (typical: 0.7 to 1.1).';
     if (!(shankFemur >= 0.7 && shankFemur <= 1.3)) return 'Shank / femur should be between 0.7 and 1.3 (typical: 0.85 to 1.15).';
+    const now = this.deps.now();
     const stored: StoredProfile = {
+      id: newId(),
+      updatedAt: now,
+      syncedVersion: null,
       kind: 'manual',
       profile: { femurTorso, shankFemur, legTorso: femurTorso * (1 + shankFemur), upSign: -1 },
       side: 'left',
@@ -441,7 +475,7 @@ export class CoachRuntime {
       thigh2d: 0,
       samples: 0,
       source: 'ratios you entered',
-      createdAt: this.deps.now(),
+      createdAt: now,
     };
     this.installProfile(stored, 'Using the ratios you entered.');
     this.persistProfile(stored);
@@ -455,6 +489,7 @@ export class CoachRuntime {
   }
 
   private installProfile(stored: StoredProfile, message: string, restored = false): void {
+    this.profileId = stored.id;
     this.controller.setProfile({
       profile: stored.profile,
       side: stored.side,
@@ -482,7 +517,11 @@ export class CoachRuntime {
     }
     const p = this.controller.bodyProfile!;
     const meta = this.controller.calibrationMeta;
+    const now = this.deps.now();
     const stored: StoredProfile = {
+      id: newId(),
+      updatedAt: now,
+      syncedVersion: null,
       kind: 'measured',
       profile: p,
       side: this.controller.trackedSide ?? 'left',
@@ -490,7 +529,7 @@ export class CoachRuntime {
       thigh2d: meta.thigh2d,
       samples: outcome.samples,
       source: outcome.source,
-      createdAt: this.deps.now(),
+      createdAt: now,
     };
     this.installProfile(stored, `Personalized from ${outcome.source} (${outcome.samples} clean standing frames).`);
     this.persistProfile(stored);
@@ -688,6 +727,8 @@ export class CoachRuntime {
       upS: view.upS,
       modelVersion: this.deps.engine.modelVersion,
       label: null,
+      updatedAt: this.deps.now(),
+      syncedVersion: null,
     };
     this.enqueue(() => this.deps.repo.addRep(stored));
   }
@@ -698,6 +739,8 @@ export class CoachRuntime {
       id: newId(),
       startedAt: this.deps.now(),
       endedAt: null,
+      updatedAt: this.deps.now(),
+      syncedVersion: null,
       source: this.source === 'file' ? 'upload' : 'live',
       fileName: this.fileName,
       poseModel: this.store.getState().poseVariant,
@@ -719,6 +762,7 @@ export class CoachRuntime {
     const lastRep = this.store.getState().lastRep;
     this.setState({ reps: this.repViews, lastRep: lastRep && lastRep.id === repId ? { ...lastRep, label } : lastRep });
     this.enqueue(() => this.deps.repo.setRepLabel(repId, label));
+    this.emit({ type: 'data_changed' });
   }
 
   /** Save the current set and start a fresh one. Returns the summary, or null if there were no reps. */

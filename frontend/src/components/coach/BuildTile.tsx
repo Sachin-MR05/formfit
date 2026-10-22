@@ -55,7 +55,12 @@ export function BuildTile() {
           </div>
         </>
       ) : (
-        <p className="mt-3 text-sm">Not personalized yet. Upload a standing side-view photo (Step 1) to see your ratios and your personal torso-lean range.</p>
+        <div className="mt-3">
+          <p className="text-sm">Not personalized yet. Calibrate your body to see your ratios and your personal torso-lean range.</p>
+          <Link to="/personalize" className="mt-3 inline-block rounded-pill bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">
+            Personalize now
+          </Link>
+        </div>
       )}
     </Tile>
   );

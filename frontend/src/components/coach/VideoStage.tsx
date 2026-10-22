@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { CameraIcon, FullscreenIcon } from '@/components/icons';
 import { VoiceButton } from '@/components/coach/VoiceButton';
 import { VoiceCaption } from '@/components/coach/VoiceCaption';
@@ -70,9 +71,9 @@ export function VideoStage() {
       </div>
 
       {source !== 'none' && !profile && (
-        <div className="absolute left-1/2 top-14 -translate-x-1/2 rounded-pill bg-amber-500 px-3 py-1 text-xs font-bold text-ink">
-          Not personalized: your target torso (dashed) appears after Step 1
-        </div>
+        <Link to="/personalize" className="absolute left-1/2 top-14 -translate-x-1/2 rounded-pill bg-amber-500 px-3 py-1 text-xs font-bold text-ink hover:bg-amber-400">
+          Not personalized: click to calibrate body
+        </Link>
       )}
       {perfHint && (
         <div className="absolute right-3 top-16 flex max-w-[60%] items-center gap-2 rounded-2xl bg-amber-500 px-3 py-1.5 text-xs font-semibold text-ink">

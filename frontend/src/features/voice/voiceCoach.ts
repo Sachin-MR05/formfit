@@ -64,6 +64,8 @@ export class VoiceCoach {
       case 'profile_ready':
         if (!e.restored) this.say(this.scheduler.onProfileReady(e.kind));
         break;
+      case 'data_changed':
+        break;
     }
   }
 

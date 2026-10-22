@@ -3,13 +3,12 @@ import { engine } from '@/engine/loader.ts';
 import {
   BAND_LABEL,
   coach,
-  planarPoints,
   poseAngles,
   scoreRep,
   shankTorso,
   type BodyProfile,
-  type Point2,
 } from '@/engine/index.ts';
+import { PoseSnapshot } from '@/components/PoseSnapshot';
 import { Pill } from '@/components/ui/Pill';
 
 interface Params {
@@ -33,57 +32,6 @@ const SLIDERS: Array<{ key: keyof Params; label: string; min: number; max: numbe
   { key: 'phi', label: 'Depth (thigh elevation, 0 = parallel)', min: -25, max: 30, step: 1, unit: '°' },
   { key: 'tau', label: 'Torso lean', min: 0, max: 70, step: 1, unit: '°' },
 ];
-
-const P = (p: Point2): string => `${p[0]},${-p[1]}`;
-
-function SideView({ prof, p, target, ok }: { prof: BodyProfile; p: Params; target: number; ok: boolean }) {
-  const st = shankTorso(prof);
-  const actual = planarPoints(prof.femurTorso, st, p.alpha, p.phi, p.tau);
-  const ghost = planarPoints(prof.femurTorso, st, p.alpha, p.phi, target);
-  const joints: Point2[] = [actual.ankle, actual.knee, actual.hip, actual.shoulder];
-  return (
-    <svg
-      viewBox="-1.6 -3.0 3.4 3.3"
-      className="h-56 w-full rounded-2xl bg-white/60"
-      role="img"
-      aria-label={`Side view: torso ${p.tau} degrees, balanced target ${target.toFixed(0)} degrees`}
-    >
-      <line x1="-1.5" y1="0.05" x2="1.7" y2="0.05" stroke="rgba(0,0,0,.25)" strokeWidth="0.03" />
-      {/* where YOUR torso should be at this depth */}
-      <line
-        x1={ghost.hip[0]}
-        y1={-ghost.hip[1]}
-        x2={ghost.shoulder[0]}
-        y2={-ghost.shoulder[1]}
-        stroke="#0891b2"
-        strokeWidth="0.06"
-        strokeDasharray="0.12 0.1"
-        strokeLinecap="round"
-      />
-      <circle cx={ghost.shoulder[0]} cy={-ghost.shoulder[1]} r="0.07" fill="none" stroke="#0891b2" strokeWidth="0.03" />
-      <polyline
-        points={`${P(actual.ankle)} ${P(actual.knee)} ${P(actual.hip)}`}
-        fill="none"
-        stroke="#3f6212"
-        strokeWidth="0.07"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <line
-        x1={actual.hip[0]}
-        y1={-actual.hip[1]}
-        x2={actual.shoulder[0]}
-        y2={-actual.shoulder[1]}
-        stroke={ok ? '#3f6212' : '#b91c1c'}
-        strokeWidth="0.07"
-        strokeLinecap="round"
-      />
-      {joints.map((j, i) => (
-        <circle key={i} cx={j[0]} cy={-j[1]} r="0.07" fill="#0b0b0b" />
-      ))}
-    </svg>
-  );
-}
 
 export function EnginePlayground() {
   const [p, setP] = useState<Params>(PRESETS['Long femur']!);
@@ -150,7 +98,7 @@ export function EnginePlayground() {
         </div>
 
         <div>
-          <SideView prof={r.profile} p={p} target={r.verdict.target} ok={r.verdict.torso === 'ok'} />
+          <PoseSnapshot profile={r.profile} alpha={p.alpha} phi={p.phi} tau={p.tau} target={r.verdict.target} ok={r.verdict.torso === 'ok'} />
           <p className="mt-1 text-xs text-ink-soft">
             Solid = your pose. Dashed cyan = balanced torso for <b>this</b> body at this depth.
           </p>

@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
+import { SyncBadge } from '@/components/SyncBadge';
+import { useAuth } from '@/features/sync/defaultSync.ts';
 
 const LINKS = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -9,9 +11,9 @@ const LINKS = [
   { to: '/settings', label: 'Settings' },
 ] as const;
 
-function Logo() {
+export function Logo({ to = '/dashboard' }: { to?: string }) {
   return (
-    <NavLink to="/coach" aria-label="FormFit home" className="flex items-center gap-2">
+    <NavLink to={to} aria-label="FormFit home" className="flex items-center gap-2">
       <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
         <g stroke="#3f6212" strokeWidth="6" strokeLinecap="round" fill="none">
           <path d="M22 14 L32 32 L24 52" />
@@ -29,8 +31,10 @@ function Logo() {
   );
 }
 
-/** Floating pill navigation (router links). */
+/** Floating pill navigation (router links) with the account / sync status. */
 export function TopNav() {
+  const user = useAuth((s) => s.user);
+  const signedIn = useAuth((s) => s.status === 'signed_in');
   return (
     <header className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-pill bg-canvas/70 px-4 py-2">
       <Logo />
@@ -40,17 +44,22 @@ export function TopNav() {
             key={l.to}
             to={l.to}
             className={({ isActive }) =>
-              `rounded-pill px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${isActive ? 'bg-borderline' : 'hover:bg-white/70'}`
+              `rounded-pill px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${isActive ? 'bg-borderline' : 'hover:bg-white/70'}`
             }
           >
             {l.label}
           </NavLink>
         ))}
       </nav>
-      <div className="flex items-center gap-2 rounded-pill bg-white px-2 py-1 pr-4" title="Accounts arrive in Phase 4">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-target text-sm font-bold">G</span>
-        <span className="text-sm font-medium">Guest</span>
-      </div>
+      <Link to="/account" className="flex items-center gap-2 rounded-pill bg-white px-2 py-1 pr-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink" title="Account and sync">
+        <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-target text-sm font-bold">
+          {signedIn ? (user?.displayName ?? user?.email ?? 'U').charAt(0).toUpperCase() : 'G'}
+        </span>
+        <span className="flex flex-col leading-tight">
+          <span className="text-sm font-medium">{signedIn ? (user?.displayName ?? user?.email) : 'Sign in'}</span>
+          <SyncBadge />
+        </span>
+      </Link>
     </header>
   );
 }

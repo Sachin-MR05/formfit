@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { BuildTile } from '@/components/coach/BuildTile';
 import { DepthTile } from '@/components/coach/DepthTile';
 import { FeaturePanel } from '@/components/coach/FeaturePanel';
-import { PersonalizeCard } from '@/components/coach/PersonalizeCard';
 import { RepListTile } from '@/components/coach/RepListTile';
 import { RepStrip } from '@/components/coach/RepStrip';
 import { ScoreTile } from '@/components/coach/ScoreTile';
@@ -13,7 +12,7 @@ import { TempoTile } from '@/components/coach/TempoTile';
 import { VideoStage } from '@/components/coach/VideoStage';
 import { useCoach } from '@/features/session/defaultRuntime.ts';
 
-/** Live Coach (camera) and Video Review share one layout; only Step 2 differs. */
+/** Live Coach (camera) and Video Review share one layout. */
 export function CoachPage({ mode }: { mode: 'live' | 'review' }) {
   const reps = useCoach((s) => s.reps);
   const lastRep = useCoach((s) => s.lastRep);
@@ -26,7 +25,6 @@ export function CoachPage({ mode }: { mode: 'live' | 'review' }) {
     <div className="grid gap-3 lg:grid-cols-[104px_1fr]">
       <Sidebar />
       <div className="min-w-0 space-y-3">
-        <PersonalizeCard />
         <SourceBar mode={mode} />
         {saveError && (
           <p role="alert" className="rounded-2xl bg-fix/40 px-4 py-2 text-sm">
