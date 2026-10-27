@@ -82,6 +82,10 @@ export class CoachRuntime {
     video.onended = () => this.onVideoEnded();
     video.onplay = () => this.syncVideoState();
     video.onpause = () => this.syncVideoState();
+    video.onseeking = () => {
+      this.controller.resetTracking();
+      this.syncVideoState();
+    };
   }
 
   /** Called when the video stage unmounts (route change): stops the source but keeps the loaded pose model. */
@@ -252,6 +256,13 @@ export class CoachRuntime {
     try {
       await this.getDetector();
       this.stopSource();
+      this.controller.cancelCalibration();
+      if (!this.controller.bodyProfile) {
+        const saved = await this.deps.repo.loadProfile();
+        if (saved) {
+          this.installProfile(saved, `Using your saved profile (${saved.source}).`);
+        }
+      }
       const stream = await this.deps.openCamera();
       this.stream = stream;
       v.srcObject = stream;
@@ -262,7 +273,7 @@ export class CoachRuntime {
     }
     this.beginRun('camera', null);
     this.banner(
-      this.controller.bodyProfile ? 'Tracking. Squat when ready.' : 'Camera ready. Upload a standing photo (Step 1) or calibrate with the camera.',
+      this.controller.bodyProfile ? 'Tracking. Squat when ready.' : 'Camera ready. Click "Calibrate with camera (3 s)" or "Track with standard build".',
       this.controller.bodyProfile ? 'ok' : 'warn',
     );
   }
@@ -273,6 +284,13 @@ export class CoachRuntime {
     try {
       await this.getDetector();
       this.stopSource();
+      this.controller.cancelCalibration();
+      if (!this.controller.bodyProfile) {
+        const saved = await this.deps.repo.loadProfile();
+        if (saved) {
+          this.installProfile(saved, `Using your saved profile (${saved.source}).`);
+        }
+      }
       const url = this.deps.createObjectUrl(file);
       this.fileUrl = url;
       v.muted = true;
@@ -291,9 +309,9 @@ export class CoachRuntime {
     }
     this.banner(
       this.controller.bodyProfile
-        ? `Analysing "${file.name}" with your personalization…`
-        : `Analysing "${file.name}". Not personalized yet: upload a standing photo, or press "Use the next 3 s of this video" while the person stands.`,
-      this.controller.bodyProfile ? 'ok' : 'warn',
+        ? `Analysing "${file.name}" with your personalization… Tracking squats.`
+        : `Analysing "${file.name}"… Tracking squats.`,
+      'ok',
     );
   }
 
@@ -316,6 +334,7 @@ export class CoachRuntime {
         this.finishSet();
         this.controller.resetSession();
         v.currentTime = 0;
+        this.banner(this.controller.bodyProfile ? 'Tracking. Squat when ready.' : 'Analysing video…', 'ok');
         void v.play();
         return;
       }
@@ -349,9 +368,13 @@ export class CoachRuntime {
   }
 
   private onVideoEnded(): void {
-    if (this.source !== 'file') return;
+    const v = this.video;
+    if (this.source !== 'file' || !v) return;
+    if (!v.ended && (v.duration ? v.currentTime < v.duration - 0.3 : false)) return;
     const open = this.controller.finishCalibrationNow();
     if (open) this.handleCalibrationOutcome(open);
+    const lastRep = this.controller.finishOpenRep(v.currentTime);
+    if (lastRep) this.handleRep(lastRep);
     const summary = this.finishSet();
     this.syncVideoState();
     this.banner(
@@ -548,7 +571,8 @@ export class CoachRuntime {
     const d = this.detector;
     const canvas = this.canvas;
     if (!v || !d || !canvas || this.busy || (this.source === 'camera' && this.cameraPaused)) return;
-    if (v.readyState < 2 || v.currentTime === this.lastVideoT) return;
+    if (v.readyState < 2) return;
+    if (this.source === 'file' && v.currentTime === this.lastVideoT) return;
     this.lastVideoT = v.currentTime;
     const w = v.videoWidth;
     const h = v.videoHeight;
@@ -562,8 +586,10 @@ export class CoachRuntime {
     const nowMs = this.deps.now();
     let pose;
     try {
-      pose = d.detectVideo(v, nowMs);
-    } catch {
+      const frameMs = this.source === 'file' ? Math.round(v.currentTime * 1000) : nowMs;
+      pose = d.detectVideo(v, frameMs);
+    } catch (e) {
+      console.error('Pose detection error:', e);
       return;
     }
     const tSeconds = this.source === 'file' ? v.currentTime : nowMs / 1000;
@@ -599,6 +625,15 @@ export class CoachRuntime {
         c.phase === 'warmup' ? `Stand tall, side-on, arms relaxed. Starting in ${c.remainingS.toFixed(1)} s…` : `Hold still… ${c.remainingS.toFixed(1)} s (standing samples: ${c.samples})`,
         'warn',
       );
+    } else if (result.status === 'tracking' && !result.rep) {
+      if (result.inRep) {
+        if (result.coach?.depthOk) {
+          this.banner('Target depth reached! Stand up to complete the rep.', 'ok');
+        } else {
+          const depth = Math.round((result.depthPct ?? 0) * 100);
+          this.banner(`Squatting… Depth ${depth}% (knee ${Math.round(result.track?.features.knee ?? 0)}°)`, 'warn');
+        }
+      }
     }
 
     if (nowMs - this.lastPublishMs >= PUBLISH_EVERY_MS || result.rep || result.calibrated) {
@@ -633,8 +668,8 @@ export class CoachRuntime {
       case 'need_profile':
         this.banner(
           this.source === 'file'
-            ? 'Not personalized: upload a standing photo (Step 1) or use the next 3 s of this video as calibration.'
-            : 'Not personalized: upload a standing photo (Step 1) or press the camera calibrate button.',
+            ? 'Not personalized: click "Track with standard build" or upload a standing photo.'
+            : 'Stand side-on in view: click "Calibrate with camera (3 s)" or "Track with standard build".',
           'warn',
         );
         break;

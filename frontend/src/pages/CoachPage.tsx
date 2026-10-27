@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BuildTile } from '@/components/coach/BuildTile';
 import { DepthTile } from '@/components/coach/DepthTile';
 import { FeaturePanel } from '@/components/coach/FeaturePanel';
@@ -10,16 +11,43 @@ import { Sidebar } from '@/components/coach/Sidebar';
 import { SourceBar } from '@/components/coach/SourceBar';
 import { TempoTile } from '@/components/coach/TempoTile';
 import { VideoStage } from '@/components/coach/VideoStage';
-import { useCoach } from '@/features/session/defaultRuntime.ts';
+import { getRuntime, useCoach } from '@/features/session/defaultRuntime.ts';
 
 /** Live Coach (camera) and Video Review share one layout. */
 export function CoachPage({ mode }: { mode: 'live' | 'review' }) {
+  const [searchParams] = useSearchParams();
   const reps = useCoach((s) => s.reps);
   const lastRep = useCoach((s) => s.lastRep);
   const saveError = useCoach((s) => s.saveError);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = reps.find((r) => r.id === selectedId) ?? null;
   const shown = selected ?? lastRep;
+
+  const profile = useCoach((s) => s.profile);
+
+  // If no personal profile has been set yet, enable the standard build so live tracking works immediately
+  useEffect(() => {
+    if (!profile) {
+      const rt = getRuntime();
+      void (async () => {
+        const saved = await rt.repository.loadProfile();
+        if (!saved) {
+          rt.useAverageBuild();
+        }
+      })();
+    }
+  }, [profile]);
+
+  // If redirected with ?calibrate=true (e.g. from Profile page "Calibrate with live camera in Coach")
+  useEffect(() => {
+    if (searchParams.get('calibrate') === 'true') {
+      const rt = getRuntime();
+      void (async () => {
+        await rt.startCamera();
+        rt.startCameraCalibration();
+      })();
+    }
+  }, [searchParams]);
 
   return (
     <div className="grid gap-3 lg:grid-cols-[104px_1fr]">

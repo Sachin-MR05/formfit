@@ -29,7 +29,7 @@ import type { CalibrationOutcome, CalibrationProgress, CompletedRep, FrameResult
 /** Minimum visibility of the tracked joints before we trust a frame. */
 export const MIN_VISIBILITY = 0.5;
 /** A time jump larger than this (seek, tab sleep) abandons any rep in progress. */
-export const MAX_TIME_GAP_S = 0.5;
+export const MAX_TIME_GAP_S = 2.5;
 const MIN_CALIB_SAMPLES = 15;
 
 type CalibMode = 'camera' | 'video';
@@ -99,6 +99,8 @@ export class SessionController {
   /** New set / new video: keep the profile, restart the rep counter. */
   resetSession(): void {
     this.repCount = 0;
+    this.calib = null;
+    this.lockedSide = null;
     this.resetTracking();
   }
 
@@ -147,10 +149,31 @@ export class SessionController {
     if (!frame) return { status: 'no_person' };
 
     const lm = frame.landmarks;
-    let side: Side = this.lockedSide ?? bestSide(lm);
-    if (this.lockedSide && sideVisibility(lm, side) < MIN_VISIBILITY) {
-      const alt = bestSide(lm);
-      if (sideVisibility(lm, alt) >= MIN_VISIBILITY) side = alt;
+    let side: Side;
+    if (this.lockedSide) {
+      side = this.lockedSide;
+      if (sideVisibility(lm, side) < MIN_VISIBILITY) {
+        const alt = bestSide(lm);
+        if (sideVisibility(lm, alt) >= MIN_VISIBILITY) side = alt;
+      }
+    } else {
+      const best = bestSide(lm);
+      if (!this.currentSide) {
+        side = best;
+      } else if (this.tracker.inRep) {
+        // Never switch sides while a rep is actively in progress
+        side = this.currentSide;
+      } else {
+        const curVis = sideVisibility(lm, this.currentSide);
+        const bestVis = sideVisibility(lm, best);
+        if (curVis < MIN_VISIBILITY && bestVis >= MIN_VISIBILITY) {
+          side = best;
+        } else if (bestVis > curVis + 0.15) {
+          side = best;
+        } else {
+          side = this.currentSide;
+        }
+      }
     }
     if (this.currentSide !== side) {
       this.smoother.reset();
@@ -236,6 +259,19 @@ export class SessionController {
   /** Close out a rep that was still in progress when the source ended (e.g. the video stopped mid-ascent). */
   get repInProgress(): boolean {
     return this.tracker.inRep;
+  }
+
+  finishOpenRep(tSeconds: number): CompletedRep | null {
+    const event = this.tracker.finishEarly(tSeconds);
+    if (!event || !this.profile) return null;
+    this.repCount += 1;
+    return {
+      index: this.repCount,
+      tSeconds,
+      event,
+      score: scoreRep(this.engine, event.bottom, this.profile),
+      coach: coach(this.engine.config, event.bottom, this.profile, 'rep'),
+    };
   }
 }
 

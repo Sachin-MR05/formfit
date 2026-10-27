@@ -6,13 +6,21 @@ import { ComingSoon } from '@/pages/ComingSoon';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DesignSystem } from '@/pages/DesignSystem';
 import { HistoryPage } from '@/pages/HistoryPage';
+import { LoginPage } from '@/pages/LoginPage';
 import { PersonalizePage } from '@/pages/PersonalizePage';
+import { RegisterPage } from '@/pages/RegisterPage';
 import { SessionDetailPage } from '@/pages/SessionDetailPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 
 export default function App() {
   return (
     <Routes>
+      {/* Immersive Auth Pages with Hero Design */}
+      <Route path="login" element={<LoginPage />} />
+      <Route path="signin" element={<Navigate to="/login" replace />} />
+      <Route path="register" element={<RegisterPage />} />
+      <Route path="signup" element={<Navigate to="/register" replace />} />
+
       <Route element={<AppShell />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />

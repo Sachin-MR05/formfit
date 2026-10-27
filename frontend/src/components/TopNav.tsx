@@ -51,15 +51,36 @@ export function TopNav() {
           </NavLink>
         ))}
       </nav>
-      <Link to="/account" className="flex items-center gap-2 rounded-pill bg-white px-2 py-1 pr-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink" title="Account and sync">
-        <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-target text-sm font-bold">
-          {signedIn ? (user?.displayName ?? user?.email ?? 'U').charAt(0).toUpperCase() : 'G'}
-        </span>
-        <span className="flex flex-col leading-tight">
-          <span className="text-sm font-medium">{signedIn ? (user?.displayName ?? user?.email) : 'Sign in'}</span>
-          <SyncBadge />
-        </span>
-      </Link>
+      {signedIn ? (
+        <Link
+          to="/account"
+          className="flex items-center gap-2 rounded-pill bg-white px-2 py-1 pr-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink shadow-xs"
+          title="Account and sync"
+        >
+          <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-good text-sm font-bold text-ink">
+            {(user?.displayName ?? user?.email ?? 'U').charAt(0).toUpperCase()}
+          </span>
+          <span className="flex flex-col leading-tight">
+            <span className="text-sm font-medium">{user?.displayName ?? user?.email}</span>
+            <SyncBadge />
+          </span>
+        </Link>
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <Link
+            to="/login"
+            className="rounded-pill bg-white/80 hover:bg-white px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors"
+          >
+            Sign In
+          </Link>
+          <Link
+            to="/register"
+            className="rounded-pill bg-good hover:brightness-105 px-3.5 py-1.5 font-display font-black text-xs uppercase tracking-wider text-ink transition-all shadow-xs"
+          >
+            Register
+          </Link>
+        </div>
+      )}
     </header>
   );
 }

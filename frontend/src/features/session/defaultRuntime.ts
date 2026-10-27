@@ -22,7 +22,7 @@ export function getRuntime(): CoachRuntime {
       openCamera,
       createObjectUrl: (b) => URL.createObjectURL(b),
       revokeObjectUrl: (u) => URL.revokeObjectURL(u),
-      now: () => performance.now(),
+      now: () => Date.now(),
       requestFrame: (cb) => requestAnimationFrame(cb),
       cancelFrame: (id) => cancelAnimationFrame(id),
     });

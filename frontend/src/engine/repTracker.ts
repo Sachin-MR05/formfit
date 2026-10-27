@@ -43,6 +43,26 @@ export class RepTracker {
     return this.phase === 'down';
   }
 
+  /** Complete an in-progress rep that already reached depth (e.g. video ended while ascending). */
+  finishEarly(t: number): RepEvent | null {
+    if (this.phase === 'down' && this.rep) {
+      const r = this.rep;
+      this.phase = 'standing';
+      this.rep = null;
+      if (r.bottom === null || r.bottomT === null || r.minKnee > this.cfg.minRepKnee) return null;
+      return {
+        startT: r.startT,
+        bottomT: r.bottomT,
+        endT: t,
+        downS: r.bottomT - r.startT,
+        upS: t - r.bottomT,
+        minKnee: r.minKnee,
+        bottom: r.bottom,
+      };
+    }
+    return null;
+  }
+
   update(t: number, f: FrameFeatures): RepEvent | null {
     const c = this.cfg;
     if (this.phase === 'standing' && f.knee < c.repStartKnee) {

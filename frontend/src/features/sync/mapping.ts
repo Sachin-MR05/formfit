@@ -2,6 +2,18 @@
 import type { StoredProfile, StoredRep, StoredSession } from '../session/types.ts';
 import type { WireProfile, WireRep, WireSession } from './types.ts';
 
+const TS_MIN = 1_577_836_800_000;
+
+/** Ensure wire timestamps are integer epoch milliseconds (healing relative performance.now() floats if any). */
+function toWireTs(ts: number | null | undefined): number {
+  if (ts == null || !Number.isFinite(ts)) return Date.now();
+  if (!Number.isInteger(ts)) {
+    const rounded = Math.round(ts);
+    return rounded >= TS_MIN ? rounded : Date.now();
+  }
+  return ts;
+}
+
 export function profileToWire(p: StoredProfile): WireProfile {
   return {
     id: p.id,
@@ -15,8 +27,8 @@ export function profileToWire(p: StoredProfile): WireProfile {
     source: p.source,
     hip_image_y0: p.hipImageY0,
     thigh2d: p.thigh2d,
-    created_at: p.createdAt,
-    updated_at: p.updatedAt,
+    created_at: toWireTs(p.createdAt),
+    updated_at: toWireTs(p.updatedAt),
   };
 }
 
@@ -37,12 +49,12 @@ export function profileFromWire(w: WireProfile): StoredProfile {
 }
 
 export function sessionToWire(s: StoredSession): WireSession {
-  if (s.deleted) return { id: s.id, updated_at: s.updatedAt, deleted: true };
+  if (s.deleted) return { id: s.id, updated_at: toWireTs(s.updatedAt), deleted: true };
   return {
     id: s.id,
-    updated_at: s.updatedAt,
-    started_at: s.startedAt,
-    ended_at: s.endedAt,
+    updated_at: toWireTs(s.updatedAt),
+    started_at: toWireTs(s.startedAt),
+    ended_at: s.endedAt == null ? null : toWireTs(s.endedAt),
     source: s.source,
     file_name: s.fileName,
     pose_model: s.poseModel as 'lite' | 'full' | 'heavy',
@@ -75,12 +87,12 @@ export function repToWire(r: StoredRep): WireRep {
   return {
     id: r.id,
     session_id: r.sessionId,
-    index: r.index,
-    created_at: r.createdAt,
+    index: Math.round(r.index),
+    created_at: toWireTs(r.createdAt),
     t_seconds: r.tSeconds,
     features: { knee: r.features.knee, hip: r.features.hip, torso: r.features.torso, shank: r.features.shank, phi: r.features.phi },
     profile: { femur_torso: r.profile.femurTorso, shank_femur: r.profile.shankFemur, leg_torso: r.profile.legTorso },
-    score: r.score,
+    score: Math.round(r.score),
     personalized: r.personalized,
     generic: r.generic,
     rule_ok: r.ruleOk,
@@ -90,7 +102,7 @@ export function repToWire(r: StoredRep): WireRep {
     up_s: r.upS,
     model_version: r.modelVersion,
     label: r.label,
-    updated_at: r.updatedAt,
+    updated_at: toWireTs(r.updatedAt),
   };
 }
 

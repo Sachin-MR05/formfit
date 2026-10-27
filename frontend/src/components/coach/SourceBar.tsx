@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom';
 import { PauseIcon, PlayIcon, UploadIcon } from '@/components/icons';
 import { getRuntime, useCoach } from '@/features/session/defaultRuntime.ts';
 import type { PoseVariant } from '@/features/pose/assets.ts';
 import { formatTime } from '@/lib/format';
 
-/** Step 2: choose what to analyse. `mode` decides whether the camera or the video upload is primary. */
+/** SourceBar: Live camera controls on /coach, Video review controls on /review. */
 export function SourceBar({ mode }: { mode: 'live' | 'review' }) {
   const rt = getRuntime();
   const source = useCoach((s) => s.source);
@@ -11,25 +12,41 @@ export function SourceBar({ mode }: { mode: 'live' | 'review' }) {
   const video = useCoach((s) => s.video);
   const paused = useCoach((s) => s.paused);
   const loading = useCoach((s) => s.modelLoading);
+  const profile = useCoach((s) => s.profile);
 
   return (
     <section aria-labelledby="source-heading" className="rounded-tile bg-white p-4">
-      <h2 id="source-heading" className="text-xs font-extrabold uppercase tracking-wide text-ink-soft">
-        {mode === 'live' ? 'Live camera' : 'Check a past video'}
-      </h2>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="source-heading" className="text-xs font-extrabold uppercase tracking-wide text-ink-soft">
+          {mode === 'live' ? 'Live Camera Tracking' : 'Video Review'}
+        </h2>
+        {/* Profile indicator */}
+        <div className="flex items-center gap-1.5 text-xs">
+          {profile ? (
+            <span className="font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
+              ✓ {profile.kind === 'measured' ? 'Personalized profile' : profile.kind === 'manual' ? 'Manual ratios' : 'Standard build'}
+            </span>
+          ) : (
+            <Link to="/profile" className="font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 hover:bg-amber-100">
+              Standard build · Calibrate in My Profile →
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
         {mode === 'live' ? (
           <button
             type="button"
             disabled={loading || source === 'camera'}
             onClick={() => void rt.startCamera()}
-            className="inline-flex items-center gap-2 rounded-pill bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-pill bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 hover:bg-blue-700"
           >
             <PlayIcon size={16} />
-            {source === 'camera' ? 'Camera on' : 'Start live camera'}
+            {source === 'camera' ? 'Camera active' : 'Start live camera'}
           </button>
         ) : (
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-pill bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ink">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-pill bg-blue-600 px-4 py-2 text-sm font-semibold text-white focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ink hover:bg-blue-700">
             <UploadIcon size={16} />
             Upload a squat video
             <input
@@ -44,14 +61,16 @@ export function SourceBar({ mode }: { mode: 'live' | 'review' }) {
             />
           </label>
         )}
+
         <button
           type="button"
           disabled={source === 'none'}
           onClick={() => rt.stop()}
-          className="rounded-pill bg-slate-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          className="rounded-pill bg-slate-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 hover:bg-slate-800"
         >
           Stop
         </button>
+
         <label className="ml-auto flex items-center gap-2 text-xs text-ink-soft">
           Pose model
           <select
@@ -71,7 +90,7 @@ export function SourceBar({ mode }: { mode: 'live' | 'review' }) {
           <button
             type="button"
             onClick={() => rt.togglePause()}
-            className="inline-flex items-center gap-2 rounded-pill bg-slate-200 px-4 py-2 text-sm font-semibold"
+            className="inline-flex items-center gap-2 rounded-pill bg-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-300"
           >
             {video.ended ? <PlayIcon size={16} /> : paused ? <PlayIcon size={16} /> : <PauseIcon size={16} />}
             {video.ended ? 'Replay' : paused ? 'Play' : 'Pause'}

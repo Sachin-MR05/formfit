@@ -31,6 +31,7 @@ export function PersonalizePage() {
   const [manualError, setManualError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+
   const p = cal.progress;
   const progressText = p
     ? p.phase === 'warmup'
@@ -174,7 +175,7 @@ export function PersonalizePage() {
           <button
             type="button"
             onClick={() => {
-              navigate('/coach');
+              navigate('/coach?calibrate=true');
             }}
             className="inline-flex items-center gap-2 rounded-pill bg-slate-700 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
           >
@@ -191,6 +192,24 @@ export function PersonalizePage() {
             </span>
           )}
         </p>
+
+        {/* After successful calibration, show quick-start buttons */}
+        {profile && cal.status === 'ok' && (
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              to="/coach"
+              className="inline-flex items-center gap-2 rounded-pill bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800 shadow-sm"
+            >
+              Go to Live Coach <ArrowRight size={16} />
+            </Link>
+            <Link
+              to="/review"
+              className="inline-flex items-center gap-2 rounded-pill bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-sm"
+            >
+              Upload &amp; Analyse a Video <ArrowRight size={16} />
+            </Link>
+          </div>
+        )}
 
         {cal.details && cal.details.length > 0 && (
           <details className="mt-3 text-sm" open={cal.status === 'failed'}>

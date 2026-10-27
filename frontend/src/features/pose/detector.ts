@@ -33,38 +33,85 @@ function toFrame(res: MpResult): PoseFrame | null {
 export async function createMediaPipeDetector(variant: PoseVariant): Promise<PoseDetector> {
   const vision = await import('@mediapipe/tasks-vision');
   const fileset = await vision.FilesetResolver.forVisionTasks(WASM_BASE);
-  const make = (delegate: 'GPU' | 'CPU') =>
+
+  const make = (mode: 'VIDEO' | 'IMAGE', delegate: 'GPU' | 'CPU') =>
     vision.PoseLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: poseModelUrl(variant), delegate },
-      runningMode: 'VIDEO',
+      runningMode: mode,
       numPoses: 1,
       minPoseDetectionConfidence: 0.5,
       minPosePresenceConfidence: 0.5,
       minTrackingConfidence: 0.5,
     });
-  let landmarker: Awaited<ReturnType<typeof make>>;
+
+  let preferredDelegate: 'GPU' | 'CPU' = 'GPU';
+  type Landmarker = Awaited<ReturnType<typeof make>>;
+  let videoLandmarker: Landmarker;
   try {
-    landmarker = await make('GPU');
+    videoLandmarker = await make('VIDEO', 'GPU');
   } catch {
-    landmarker = await make('CPU');
+    preferredDelegate = 'CPU';
+    videoLandmarker = await make('VIDEO', 'CPU');
   }
+
+  // Keep a separate instance for still images so runningMode: 'IMAGE' never corrupts the video stream timestamps
+  let imageLandmarker: Landmarker | null = null;
+  let lastTimestamp = -1;
+
+  const recreateVideoLandmarker = async () => {
+    try {
+      videoLandmarker?.close();
+    } catch {
+      /* ignore */
+    }
+    videoLandmarker = await make('VIDEO', preferredDelegate);
+    lastTimestamp = -1;
+  };
 
   return {
     detectVideo(video, timestampMs) {
-      return toFrame(landmarker.detectForVideo(video, timestampMs) as unknown as MpResult);
+      if (!videoLandmarker) return null;
+      // If timestamps jumped backwards significantly (e.g. video replayed or seeked backward), recreate the landmarker graph
+      if (lastTimestamp > 0 && timestampMs < lastTimestamp - 50) {
+        void recreateVideoLandmarker();
+        return null;
+      }
+      // MediaPipe requires strictly monotonically increasing timestamps (+1 ms minimum step)
+      const ts = timestampMs <= lastTimestamp ? lastTimestamp + 1 : timestampMs;
+      lastTimestamp = ts;
+      try {
+        return toFrame(videoLandmarker.detectForVideo(video, ts) as unknown as MpResult);
+      } catch (e) {
+        console.warn('MediaPipe detectForVideo error, recreating video landmarker:', e);
+        void recreateVideoLandmarker();
+        return null;
+      }
     },
     async detectStills(sources) {
       const out: Array<PoseFrame | null> = [];
-      await landmarker.setOptions({ runningMode: 'IMAGE' });
-      try {
-        for (const src of sources) out.push(toFrame(landmarker.detect(src) as unknown as MpResult));
-      } finally {
-        await landmarker.setOptions({ runningMode: 'VIDEO' });
+      if (!imageLandmarker) {
+        try {
+          imageLandmarker = await make('IMAGE', preferredDelegate);
+        } catch {
+          imageLandmarker = await make('IMAGE', 'CPU');
+        }
+      }
+      for (const src of sources) {
+        out.push(toFrame(imageLandmarker.detect(src) as unknown as MpResult));
       }
       return out;
     },
     close() {
-      landmarker.close();
+      try {
+        videoLandmarker?.close();
+      } catch {
+        /* ignore */
+      }
+      try {
+        imageLandmarker?.close();
+      } catch {
+        /* ignore */
+      }
     },
   };
 }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { SyncBadge } from '@/components/SyncBadge';
 import { Pill } from '@/components/ui/Pill';
 import { Tile } from '@/components/ui/Tile';
@@ -115,9 +116,19 @@ export function AccountPage() {
 
       {status !== 'signed_in' ? (
         <Tile tone="good">
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Sign in or create an account">
-            <Pill selected={mode === 'signin'} onClick={() => setMode('signin')}>Sign in</Pill>
-            <Pill selected={mode === 'signup'} onClick={() => setMode('signup')}>Create account</Pill>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Sign in or create an account">
+              <Pill selected={mode === 'signin'} onClick={() => setMode('signin')}>Sign in</Pill>
+              <Pill selected={mode === 'signup'} onClick={() => setMode('signup')}>Create account</Pill>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to="/login" className="rounded-pill bg-ink text-white px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-black/80 transition-colors">
+                Dedicated Login Page
+              </Link>
+              <Link to="/register" className="rounded-pill bg-white text-ink px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-white/80 transition-colors">
+                Dedicated Register Page
+              </Link>
+            </div>
           </div>
           <p className="mt-2 text-sm text-ink-soft">
             An account backs up your sessions and lets you see them on every device. Anything you already recorded on this device is uploaded after you sign in.
