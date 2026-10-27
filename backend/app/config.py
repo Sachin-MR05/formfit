@@ -31,6 +31,19 @@ class Settings:
 
     @staticmethod
     def from_env(environ: Mapping[str, str] | None = None) -> "Settings":
+        if environ is None:
+            try:
+                from dotenv import load_dotenv
+
+                backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                env_file = os.path.join(backend_dir, ".env")
+                if os.path.exists(env_file):
+                    load_dotenv(env_file)
+                root_env = os.path.join(os.path.dirname(backend_dir), ".env")
+                if os.path.exists(root_env):
+                    load_dotenv(root_env)
+            except Exception:
+                pass
         e = os.environ if environ is None else environ
         env = e.get("FORMFIT_ENV", "development").strip().lower()
         if env not in ("development", "production", "test"):
