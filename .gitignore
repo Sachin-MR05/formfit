@@ -12,7 +12,7 @@ coverage/
 # large model binaries are fetched by `npm run setup:models`
 frontend/public/models/*
 !frontend/public/models/.gitkeep
-!frontend/public/models/README.md
+#!frontend/public/models/README.md
 
 # python (ml/ and backend/)
 __pycache__/
