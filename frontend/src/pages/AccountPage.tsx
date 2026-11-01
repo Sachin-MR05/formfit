@@ -194,17 +194,17 @@ export function AccountPage() {
             </div>
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-semibold text-red-800">Delete my account</summary>
-              <div className="mt-2 max-w-md space-y-2 text-sm">
+              <form onSubmit={(e) => { e.preventDefault(); void deleteAccount(); }} className="mt-2 max-w-md space-y-2 text-sm">
                 <p className="text-ink-soft">This permanently deletes your account, sessions and reps from the server. Enter your password to confirm.</p>
                 <input type="password" autoComplete="current-password" aria-label="Password to confirm deletion" value={deletePw} onChange={(e) => setDeletePw(e.target.value)} className="block w-full rounded-lg border border-black/15 bg-white px-3 py-2" />
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={alsoWipe} onChange={(e) => setAlsoWipe(e.target.checked)} className="h-4 w-4 accent-black" />
                   Also remove the data stored on this device
                 </label>
-                <button type="button" disabled={!deletePw} onClick={() => void deleteAccount()} className="rounded-pill bg-red-700 px-5 py-2.5 font-semibold text-white disabled:opacity-50">
+                <button type="submit" disabled={!deletePw} className="rounded-pill bg-red-700 px-5 py-2.5 font-semibold text-white disabled:opacity-50">
                   Delete account permanently
                 </button>
-              </div>
+              </form>
             </details>
           </Tile>
         </>
